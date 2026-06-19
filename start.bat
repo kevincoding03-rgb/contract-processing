@@ -66,7 +66,7 @@ for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":3000 " ^| findstr "LISTENIN
 echo.
 echo 启动后端服务 (FastAPI - 端口 8000)...
 cd /d "%~dp0backend"
-start "后端服务 - FastAPI" cmd /k "call venv\Scripts\activate.bat && python -m uvicorn api.index:app --reload --port 8000"
+start "后端服务 - FastAPI" cmd /k "call venv\Scripts\activate.bat && python -m uvicorn api.index:app --host 0.0.0.0 --reload --port 8000"
 
 :: 启动前端
 echo 启动前端服务 (React - 端口 3000)...
@@ -80,6 +80,13 @@ echo.
 echo   前端页面: http://localhost:3000
 echo   后端API:  http://localhost:8000
 echo   API文档:  http://localhost:8000/docs
+echo.
+echo   局域网访问（其他设备用以下地址）:
+echo   前端页面: http://192.168.0.103:3000
+echo   后端API:  http://192.168.0.103:8000
+echo   API文档:  http://192.168.0.103:8000/docs
+echo.
+echo   注意: 请确保 Windows 防火墙允许 3000 和 8000 端口
 echo.
 echo   关闭此窗口不会影响已启动的服务
 echo   如需停止，请关闭对应的命令行窗口
