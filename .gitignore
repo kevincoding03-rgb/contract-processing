@@ -17,6 +17,8 @@ env/
 node_modules/
 
 # === 构建产物 ===
+dist/
+build/
 frontend/dist/
 frontend/build/
 
@@ -43,3 +45,5 @@ Desktop.ini
 # === 其他 ===
 *.bak
 *.tmp
+*.zip
+legal-platform/
