@@ -1,0 +1,1 @@
+Legal Document Platform (Ollama-based): upload contracts (txt/PDF/Word/image); minicpm-v OCRs image text and qwen2.5 analyzes five dimensions (parties, obligations, breach, dispute, risks), outputting risk levels and suggestions. Fully local for privacy, with one-click launch and Vercel support.
