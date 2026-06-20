@@ -24,6 +24,7 @@
 - 🎯 **风险等级评估**：高 / 中 / 低 三级风险标注，逐条给出修改建议
 - 💬 **智能法律问答**：独立问答页面，支持通用法律问答 + 基于合同的多轮追问（三模式切换：通用问答 / 粘贴合同 / 上传合同）
 - 💾 **历史记录**：基于 Supabase 存储分析记录，可随时回看（可选）
+- 🧹 **启动自动清理**：每次启动自动清空云端历史记录，保障隐私
 - 🏠 **全本地部署**：使用 Ollama 本地模型，数据不离开你的电脑
 
 ### 🧠 工作原理 / 架构
@@ -72,25 +73,29 @@
 
 ```
 法律/
-├── backend/                    # 后端 - FastAPI
+├── backend/                        # 后端 - FastAPI
 │   ├── api/
-│   │   └── index.py            # API 路由（/api/analyze 等）
+│   │   └── index.py                # API 路由（/api/analyze 等）
 │   ├── services/
-│   │   ├── ai_service.py       # AI 模型调用（文本分析 + 图片 OCR）
-│   │   ├── file_parser.py      # 文件解析（PDF/Word/图片 文字+图片提取）
-│   │   └── supabase_client.py  # Supabase 数据库客户端
+│   │   ├── ai_service.py           # AI 模型调用（文本分析 + 图片 OCR + 问答）
+│   │   ├── file_parser.py          # 文件解析（PDF/Word/图片 文字+图片提取）
+│   │   └── supabase_client.py      # Supabase 数据库客户端
+│   ├── _startup_cleanup.py         # 启动时自动清理云端历史
 │   ├── requirements.txt
-│   ├── .env.example            # 环境变量示例
-│   └── vercel.json
-├── frontend/                   # 前端 - React + Vite + Tailwind
+│   ├── .env.example                # 环境变量示例
+│   └── vercel.json                 # Vercel 部署配置
+├── frontend/                       # 前端 - React + Vite + Tailwind
 │   ├── src/
-│   │   ├── pages/              # 页面（首页 / 智能问答 / 历史记录）
-│   │   ├── components/         # 组件（上传 / 风险报告 / 历史列表）
-│   │   └── api/client.js       # API 请求封装
+│   │   ├── pages/                  # 页面（Home / Chat / History）
+│   │   ├── components/             # 组件（Header / FileUpload / RiskReport / HistoryList）
+│   │   ├── api/client.js           # API 请求封装
+│   │   ├── App.jsx                 # 路由配置
+│   │   └── main.jsx                # 入口文件
+│   ├── vite.config.js             # Vite 配置（端口 3000，API 代理）
 │   ├── package.json
 │   └── .env.example
-├── supabase_init.sql           # 数据库初始化 SQL
-└── 启动.bat                    # Windows 一键启动脚本
+├── supabase_init.sql               # 数据库初始化 SQL
+└── start.bat                       # Windows 一键启动脚本
 ```
 
 ### 🚀 快速开始
@@ -104,7 +109,7 @@
 #### 1. 拉取 AI 模型
 
 ```bash
-# 文本模型（法律分析）
+# 文本模型（法律分析 + 问答）
 ollama pull qwen2.5:3b
 
 # 视觉模型（图片 OCR）
@@ -116,10 +121,12 @@ ollama pull minicpm-v4.6:latest
 直接双击运行：
 
 ```
-启动.bat
+start.bat
 ```
 
-脚本会自动：检查环境 → 安装依赖 → 启动后端（端口 8000）→ 启动前端（端口 3000）→ 打开浏览器。
+脚本会自动：检查环境 → 安装依赖 → 启动后端（端口 8000）→ 自动清空云端历史 → 启动前端（端口 3000）→ 打开浏览器。
+
+> 💡 启动时会自动调用清理接口清空 Supabase 中的历史记录，保障隐私安全。
 
 #### 3. 手动启动
 
@@ -154,7 +161,7 @@ npm run dev
 | 变量名 | 说明 | 默认值 |
 |--------|------|--------|
 | `LEGAL_MODEL_BASE_URL` | Ollama API 地址 | `http://localhost:11434/v1` |
-| `LEGAL_MODEL_NAME` | 文本模型名（法律分析） | `qwen2.5:3b` |
+| `LEGAL_MODEL_NAME` | 文本模型名（法律分析 + 问答） | `qwen2.5:3b` |
 | `LEGAL_VISION_MODEL_NAME` | 视觉模型名（OCR） | `minicpm-v4.6:latest` |
 | `LEGAL_MODEL_API_KEY` | API Key（Ollama 任意值即可） | `ollama` |
 | `SUPABASE_URL` | Supabase 项目地址（可选） | — |
@@ -168,6 +175,8 @@ npm run dev
 |--------|------|--------|
 | `VITE_API_BASE_URL` | 后端 API 地址 | `http://localhost:8000` |
 
+> 💡 开发环境中 Vite 已配置 `/api` 代理到 `http://localhost:8000`，通常无需手动设置。
+
 ### 📡 API 接口
 
 | 方法 | 路径 | 说明 |
@@ -177,13 +186,14 @@ npm run dev
 | `GET` | `/api/health` | 健康检查 |
 | `GET` | `/api/history/{user_id}` | 查询历史记录 |
 | `GET` | `/api/record/{record_id}` | 查询单条记录 |
+| `DELETE` | `/api/clear-history` | 清空所有历史记录 |
 | `GET` | `/docs` | Swagger API 文档 |
 
 ### 📦 部署
 
 前后端均支持部署到 **Vercel**：
 
-- **后端**：FastAPI + Mangum，已配置 `vercel.json`
+- **后端**：FastAPI + Mangum，已配置 `backend/vercel.json`
 - **前端**：Vite 静态构建，`npm run build` 后部署 `dist/`
 - 部署时在 Vercel 控制台配置对应环境变量
 
@@ -204,6 +214,7 @@ An AI-powered legal contract risk analysis platform built on local LLMs (Ollama)
 - 🎯 **Risk grading**: High / Medium / Low levels with per-item suggestions
 - 💬 **Smart Q&A**: Dedicated chat page supporting general legal Q&A + multi-turn contract follow-ups (three modes: general / paste contract / upload contract)
 - 💾 **History**: Supabase-backed record storage (optional)
+- 🧹 **Auto cleanup on startup**: Automatically clears cloud history on each launch for privacy
 - 🏠 **Fully local**: Uses Ollama local models — your data never leaves your machine
 
 ### 🧠 How It Works
@@ -236,9 +247,9 @@ An AI-powered legal contract risk analysis platform built on local LLMs (Ollama)
 
 ┌─────────────────────────────────────────┐
 │  Smart Q&A (Chat Page)                  │
-│  · General legal Q&A (free-form)        │
+│  · General legal Q&A (free-form)       │
 │  · Contract-based follow-ups (multi-turn│
-│    conversation with context memory)     │
+│    conversation with context memory)    │
 └─────────────────────────────────────────┘
 ```
 
@@ -248,22 +259,27 @@ An AI-powered legal contract risk analysis platform built on local LLMs (Ollama)
 
 ```
 法律/
-├── backend/                    # Backend - FastAPI
-│   ├── api/index.py            # API routes (/api/analyze, etc.)
+├── backend/                        # Backend - FastAPI
+│   ├── api/index.py                # API routes (/api/analyze, etc.)
 │   ├── services/
-│   │   ├── ai_service.py       # AI calls (text analysis + image OCR)
-│   │   ├── file_parser.py      # File parsing (text + image extraction)
-│   │   └── supabase_client.py  # Supabase client
+│   │   ├── ai_service.py           # AI calls (text analysis + image OCR + chat)
+│   │   ├── file_parser.py          # File parsing (text + image extraction)
+│   │   └── supabase_client.py      # Supabase client
+│   ├── _startup_cleanup.py         # Auto-clear cloud history on startup
 │   ├── requirements.txt
-│   └── .env.example
-├── frontend/                   # Frontend - React + Vite + Tailwind
+│   ├── .env.example
+│   └── vercel.json                 # Vercel deployment config
+├── frontend/                       # Frontend - React + Vite + Tailwind
 │   ├── src/
-│   │   ├── pages/              # Pages (Home / Chat / History)
-│   │   ├── components/         # Components (Upload / Report / History)
-│   │   └── api/client.js       # API client
+│   │   ├── pages/                  # Pages (Home / Chat / History)
+│   │   ├── components/             # Components (Header / FileUpload / RiskReport / HistoryList)
+│   │   ├── api/client.js           # API client
+│   │   ├── App.jsx                 # Router config
+│   │   └── main.jsx                # Entry point
+│   ├── vite.config.js              # Vite config (port 3000, API proxy)
 │   └── package.json
-├── supabase_init.sql           # Database init SQL
-└── 启动.bat                    # Windows one-click launcher
+├── supabase_init.sql               # Database init SQL
+└── start.bat                       # Windows one-click launcher
 ```
 
 ### 🚀 Quick Start
@@ -277,7 +293,7 @@ An AI-powered legal contract risk analysis platform built on local LLMs (Ollama)
 #### 1. Pull AI Models
 
 ```bash
-# Text model (legal analysis)
+# Text model (legal analysis + chat)
 ollama pull qwen2.5:3b
 
 # Vision model (image OCR)
@@ -289,10 +305,12 @@ ollama pull minicpm-v4.6:latest
 Double-click:
 
 ```
-启动.bat
+start.bat
 ```
 
-The script automatically: checks environment → installs dependencies → starts backend (port 8000) → starts frontend (port 3000) → opens the browser.
+The script automatically: checks environment → installs dependencies → starts backend (port 8000) → auto-clears cloud history → starts frontend (port 3000) → opens the browser.
+
+> 💡 The launcher automatically clears Supabase history records on startup for privacy.
 
 #### 3. Manual Launch
 
@@ -327,7 +345,7 @@ Open http://localhost:3000 to use the app.
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `LEGAL_MODEL_BASE_URL` | Ollama API URL | `http://localhost:11434/v1` |
-| `LEGAL_MODEL_NAME` | Text model name (legal analysis) | `qwen2.5:3b` |
+| `LEGAL_MODEL_NAME` | Text model name (legal analysis + chat) | `qwen2.5:3b` |
 | `LEGAL_VISION_MODEL_NAME` | Vision model name (OCR) | `minicpm-v4.6:latest` |
 | `LEGAL_MODEL_API_KEY` | API key (any value for Ollama) | `ollama` |
 | `SUPABASE_URL` | Supabase project URL (optional) | — |
@@ -341,6 +359,8 @@ Open http://localhost:3000 to use the app.
 |----------|-------------|---------|
 | `VITE_API_BASE_URL` | Backend API URL | `http://localhost:8000` |
 
+> 💡 In development, Vite proxies `/api` to `http://localhost:8000`, so manual configuration is usually unnecessary.
+
 ### 📡 API Endpoints
 
 | Method | Path | Description |
@@ -350,13 +370,14 @@ Open http://localhost:3000 to use the app.
 | `GET` | `/api/health` | Health check |
 | `GET` | `/api/history/{user_id}` | Query history |
 | `GET` | `/api/record/{record_id}` | Query a single record |
+| `DELETE` | `/api/clear-history` | Clear all history records |
 | `GET` | `/docs` | Swagger API docs |
 
 ### 📦 Deployment
 
 Both frontend and backend support **Vercel** deployment:
 
-- **Backend**: FastAPI + Mangum, `vercel.json` included
+- **Backend**: FastAPI + Mangum, `backend/vercel.json` included
 - **Frontend**: Vite static build, deploy `dist/` after `npm run build`
 - Configure environment variables in the Vercel dashboard
 
