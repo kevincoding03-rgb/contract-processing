@@ -6,15 +6,31 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
+# 占位符值（来自 .env.example），不算作已配置
+_PLACEHOLDER_URL = "https://your-project.supabase.co"
+_PLACEHOLDER_KEY = "your-supabase-anon-key"
+
 supabase = None
 
-if SUPABASE_URL and SUPABASE_KEY and SUPABASE_URL != "https://your-project.supabase.co" and SUPABASE_KEY.startswith("eyJ"):
+# 校验：URL 非空且非占位符；KEY 非空且非占位符
+_key_ok = bool(SUPABASE_KEY) and SUPABASE_KEY != _PLACEHOLDER_KEY
+_url_ok = bool(SUPABASE_URL) and SUPABASE_URL != _PLACEHOLDER_URL
+
+if _url_ok and _key_ok:
     try:
         from supabase import create_client, Client
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        print(f"[Supabase] 连接成功: {SUPABASE_URL}")
     except Exception as e:
         print(f"[Supabase] 连接失败: {e}")
         supabase = None
+else:
+    _reason = []
+    if not _url_ok:
+        _reason.append("SUPABASE_URL 未配置")
+    if not _key_ok:
+        _reason.append("SUPABASE_KEY 未配置")
+    print(f"[Supabase] 未配置 ({', '.join(_reason)})，历史记录功能不可用")
 
 
 def get_supabase():
