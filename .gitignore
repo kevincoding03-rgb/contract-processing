@@ -1,45 +1,66 @@
-# === Python ===
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-*.egg-info/
-dist/
-build/
-*.egg
+# ===== OS =====
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
 
-# === 虚拟环境 ===
-venv/
-.venv/
-env/
-
-# === Node.js ===
-node_modules/
-
-# === 构建产物 ===
-frontend/dist/
-frontend/build/
-
-# === 环境变量 / 敏感信息 ===
-.env
-.env.local
-.env.*.local
-
-# === IDE ===
-.idea/
+# ===== IDE/Editor =====
 .vscode/
+.idea/
+.project
+.classpath
+.settings/
+*.sublime-*
+
+# ===== Node.js/Frontend =====
+node_modules/
+.pnpm-store/
+.next/
+.nuxt/
+.vite/
+.cache/
+.eslintcache
+*.tsbuildinfo
+
+# ===== Python =====
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+*.egg-info/
+
+# ===== Rust =====
+target/
+
+# ===== Java/JVM =====
+.gradle/
+*.class
+*.jar
+*.war
+*.ear
+
+# ===== Ruby =====
+.bundle/
+
+# ===== Logs/Temp =====
+*.log
+logs/
+*.tmp
+*.temp
 *.swp
 *.swo
 *~
 
-# === 操作系统 ===
-.DS_Store
-Thumbs.db
-Desktop.ini
+# ===== Test Coverage =====
+coverage/
+.nyc_output/
+htmlcov/
+.coverage
+*.lcov
 
-# === 日志 ===
-*.log
-
-# === 其他 ===
-*.bak
-*.tmp
+# ===== Internal =====
+/.work/
