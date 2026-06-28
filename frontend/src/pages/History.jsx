@@ -3,13 +3,15 @@ import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import HistoryList from '../components/HistoryList'
 import RiskReport from '../components/RiskReport'
-import { getHistory } from '../api/client'
+import { getHistory, clearHistory } from '../api/client'
+import { useLanguage } from '../i18n'
 
 export default function History() {
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedRecord, setSelectedRecord] = useState(null)
+  const { t } = useLanguage()
 
   useEffect(() => {
     fetchHistory()
@@ -22,7 +24,7 @@ export default function History() {
       const data = await getHistory('anonymous')
       setRecords(data.records || [])
     } catch (err) {
-      setError(err.message || '获取历史记录失败')
+      setError(err.message || t('fetchHistoryFailed'))
     } finally {
       setLoading(false)
     }
@@ -36,6 +38,16 @@ export default function History() {
     setSelectedRecord(null)
   }
 
+  const handleClearHistory = async () => {
+    if (!confirm(t('clearHistoryConfirm') || '确定清空所有历史记录？此操作不可恢复。')) return
+    try {
+      await clearHistory()
+      setRecords([])
+    } catch (err) {
+      setError(err.message || t('clearHistoryFailed') || '清空失败')
+    }
+  }
+
   if (selectedRecord) {
     return (
       <div className="space-y-6">
@@ -44,7 +56,7 @@ export default function History() {
           className="flex items-center gap-1.5 text-gray-600 hover:text-primary-600 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm font-medium">返回列表</span>
+          <span className="text-sm font-medium">{t('backToList')}</span>
         </button>
         <RiskReport
           analysis={selectedRecord.result}
@@ -57,16 +69,24 @@ export default function History() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">分析历史</h1>
-        <Link to="/" className="btn-secondary text-sm">
-          新建分析
-        </Link>
+        <h1 className="text-2xl font-bold text-gray-900">{t('historyTitle')}</h1>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleClearHistory}
+            className="text-sm text-red-500 hover:text-red-700 transition-colors"
+          >
+            {t('clearHistory') || '清空历史'}
+          </button>
+          <Link to="/" className="btn-secondary text-sm">
+            {t('newAnalysis')}
+          </Link>
+        </div>
       </div>
 
       {loading ? (
         <div className="text-center py-12">
           <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-gray-500">加载中...</p>
+          <p className="text-gray-500">{t('loading')}</p>
         </div>
       ) : error ? (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">

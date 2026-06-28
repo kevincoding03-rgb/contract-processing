@@ -1,95 +1,108 @@
 @echo off
 chcp 65001 >nul 2>&1
-title 法律文书智能处理平台 - 启动器
+title Legal Document Intelligent Processing Platform - Launcher
 
 echo ============================================
-echo   法律文书智能处理平台 - 一键启动
+echo   Legal Document Intelligent Processing Platform - One-Click Launch
 echo ============================================
 echo.
 
-:: 检查 Python
-where python >nul 2>&1
+set PYTHON=C:\Users\halcy\AppData\Local\Programs\Python\Python313\python.exe
+
+:: Check Python
+%PYTHON% --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [错误] 未找到 Python，请先安装 Python 3.8+
+    echo [ERROR] Python not found at %PYTHON%
     pause
     exit /b 1
 )
-echo [1/5] Python 检查通过
+echo [1/7] Python check passed
 
-:: 检查 Node.js
+:: Check Node.js
 where node >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [错误] 未找到 Node.js，请先安装 Node.js
+    echo [ERROR] Node.js not found, please install Node.js
     pause
     exit /b 1
 )
-echo [2/5] Node.js 检查通过
+echo [2/7] Node.js check passed
 
-:: 安装后端依赖
-echo [3/5] 检查后端依赖...
+:: Install backend dependencies
+echo [3/7] Checking backend dependencies...
 cd /d "%~dp0backend"
 if not exist "venv" (
-    python -m venv venv
+    %PYTHON% -m venv venv
 )
 call venv\Scripts\activate.bat
 if not exist "requirements.txt" (
-    echo [错误] 未找到 requirements.txt
+    echo [ERROR] requirements.txt not found
     pause
     exit /b 1
 )
 pip install -q -r requirements.txt
-echo 后端依赖就绪
+echo Backend dependencies ready
 
-:: 检查 .env 文件
+:: Check .env file
 if not exist ".env" (
-    echo [警告] 未找到 .env 文件，正在创建...
+    echo [WARNING] .env file not found, creating...
     copy ".env.example" ".env" >nul
-    echo [提示] 请编辑 backend\.env 文件，配置 Supabase 信息
+    echo [TIP] Please edit backend\.env to configure Supabase settings
 )
 
-:: 安装前端依赖
-echo [4/5] 检查前端依赖...
+:: Install frontend dependencies
+echo [4/7] Checking frontend dependencies...
 cd /d "%~dp0frontend"
 if not exist "node_modules" (
     call npm install
 )
-echo 前端依赖就绪
+echo Frontend dependencies ready
 
-:: 关闭旧进程
-echo [5/5] 启动服务...
-taskkill /f /fi "WINDOWTITLE eq 后端服务 - FastAPI" >nul 2>&1
-taskkill /f /fi "WINDOWTITLE eq 前端服务 - React" >nul 2>&1
+:: Kill old processes
+echo [5/7] Starting services...
+taskkill /f /fi "WINDOWTITLE eq Backend Service - FastAPI" >nul 2>&1
+taskkill /f /fi "WINDOWTITLE eq Frontend Service - React" >nul 2>&1
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000 " ^| findstr "LISTENING"') do taskkill /f /pid %%a >nul 2>&1
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":3000 " ^| findstr "LISTENING"') do taskkill /f /pid %%a >nul 2>&1
 
-:: 启动后端
+:: Start backend
 echo.
-echo 启动后端服务 (FastAPI - 端口 8000)...
+echo Starting backend service (FastAPI - Port 8000)...
 cd /d "%~dp0backend"
-start "后端服务 - FastAPI" cmd /k "call venv\Scripts\activate.bat && python -m uvicorn api.index:app --host 0.0.0.0 --reload --port 8000"
+start "Backend Service - FastAPI" cmd /k "call venv\Scripts\activate.bat && %PYTHON% -m uvicorn api.index:app --host 0.0.0.0 --reload --port 8000"
 
-:: 启动前端
-echo 启动前端服务 (React - 端口 3000)...
+:: Wait for backend to start
+echo Waiting for backend to start...
+timeout /t 5 /nobreak >nul
+
+:: Auto cleanup on startup
+echo Auto clearing cloud history...
+%PYTHON% "%~dp0backend\_startup_cleanup.py"
+echo.
+
+:: Start frontend
+echo Starting frontend service (React - Port 3000)...
 cd /d "%~dp0frontend"
-start "前端服务 - React" cmd /k "npm run dev"
+start "Frontend Service - React" cmd /k "npm run dev"
 
 echo.
 echo ============================================
-echo   启动完成！
+echo   Launch complete!
 echo.
-echo   前端页面: http://localhost:3000
-echo   后端API:  http://localhost:8000
-echo   API文档:  http://localhost:8000/docs
+echo   Frontend:  http://localhost:3000
+echo   Backend:   http://localhost:8000
+echo   API Docs:  http://localhost:8000/docs
 echo.
-echo   局域网访问（其他设备用以下地址）:
-echo   前端页面: http://192.168.0.103:3000
-echo   后端API:  http://192.168.0.103:8000
-echo   API文档:  http://192.168.0.103:8000/docs
+echo   LAN access (use these addresses from other devices):
+echo   Frontend:  http://192.168.0.103:3000
+echo   Backend:   http://192.168.0.103:8000
+echo   API Docs:  http://192.168.0.103:8000/docs
 echo.
-echo   注意: 请确保 Windows 防火墙允许 3000 和 8000 端口
+echo   Note: Please ensure Windows Firewall allows ports 3000 and 8000
 echo.
-echo   关闭此窗口不会影响已启动的服务
-echo   如需停止，请关闭对应的命令行窗口
+echo   Closing this window will not affect running services
+echo   To stop, close the corresponding command windows
+echo.
+echo   Tip: Cloud history is automatically cleared on each launch
 echo ============================================
 echo.
 

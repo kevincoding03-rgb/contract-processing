@@ -1,34 +1,34 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, Loader2, MessageCircle, FileText, Upload, X, Trash2, Bot, User } from 'lucide-react'
 import { chat as chatApi } from '../api/client'
-
-const MODE_TABS = [
-  { key: 'none', label: '通用问答', icon: MessageCircle },
-  { key: 'paste', label: '粘贴合同', icon: FileText },
-  { key: 'upload', label: '上传合同', icon: Upload },
-]
-
-const EXAMPLE_QUESTIONS = [
-  '租房合同需要注意哪些条款？',
-  '这份合同的违约责任条款合理吗？',
-  '请解释一下不可抗力条款',
-  '合同主体资格如何审查？',
-]
+import { useLanguage } from '../i18n'
 
 export default function Chat() {
-  const [messages, setMessages] = useState([]) // [{role:'user'|'assistant', content, isError?}]
+  const { t } = useLanguage()
+
+  const MODE_TABS = [
+    { key: 'none', label: t('modeGeneral'), icon: MessageCircle },
+    { key: 'paste', label: t('modePaste'), icon: FileText },
+    { key: 'upload', label: t('modeUpload'), icon: Upload },
+  ]
+
+  const EXAMPLE_QUESTIONS = [
+    t('exampleQ1'),
+    t('exampleQ2'),
+    t('exampleQ3'),
+    t('exampleQ4'),
+  ]
+
+  const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-
-  // 上下文相关
-  const [mode, setMode] = useState('none') // none | paste | upload
+  const [mode, setMode] = useState('none')
   const [context, setContext] = useState('')
   const [uploadName, setUploadName] = useState('')
 
   const messagesEndRef = useRef(null)
   const fileInputRef = useRef(null)
 
-  // 消息更新后自动滚动到底部
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
@@ -38,7 +38,6 @@ export default function Chat() {
     if (!question || loading) return
 
     const userMsg = { role: 'user', content: question }
-    // 构造发给后端的历史（不含本次 user，后端会拿到完整历史）
     const history = [...messages, userMsg]
     setMessages(history)
     setInput('')
@@ -53,7 +52,7 @@ export default function Chat() {
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: err.message || '回答失败，请稍后重试', isError: true },
+        { role: 'assistant', content: err.message || t('answerFailed'), isError: true },
       ])
     } finally {
       setLoading(false)
@@ -61,7 +60,6 @@ export default function Chat() {
   }
 
   const handleKeyDown = (e) => {
-    // 回车发送，Shift+回车换行
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
@@ -73,7 +71,7 @@ export default function Chat() {
     if (!f) return
     const ext = f.name.split('.').pop().toLowerCase()
     if (ext !== 'txt') {
-      alert('问答页仅支持上传 .txt 合同文件。PDF/Word/图片请先在“合同分析”页处理，或直接粘贴文本。')
+      alert(t('chatUploadError'))
       e.target.value = ''
       return
     }
@@ -95,7 +93,7 @@ export default function Chat() {
 
   const clearConversation = () => {
     if (messages.length === 0) return
-    if (confirm('确定清空当前对话？此操作不可恢复。')) {
+    if (confirm(t('clearConfirm'))) {
       setMessages([])
     }
   }
@@ -104,13 +102,11 @@ export default function Chat() {
 
   return (
     <div className="space-y-5">
-      {/* 标题 */}
       <div className="text-center mb-2">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">智能法律问答</h1>
-        <p className="text-gray-500">向 AI 法律顾问提问，或粘贴/上传合同后针对合同追问</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('chatTitle')}</h1>
+        <p className="text-gray-500">{t('chatSubtitle')}</p>
       </div>
 
-      {/* 上下文模式切换 */}
       <div className="card">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2 flex-wrap">
@@ -138,7 +134,7 @@ export default function Chat() {
             <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-1.5 rounded-lg">
               <FileText className="w-4 h-4" />
               <span>
-                {mode === 'upload' ? uploadName : '已粘贴合同'}（{context.length} 字）
+                {mode === 'upload' ? uploadName : t('pastedContract')}（{t('chars', { count: context.length })}）
               </span>
               <button type="button" onClick={clearContext} className="hover:text-red-500">
                 <X className="w-4 h-4" />
@@ -147,18 +143,16 @@ export default function Chat() {
           )}
         </div>
 
-        {/* 粘贴模式 */}
         {mode === 'paste' && (
           <textarea
             value={mode === 'paste' ? context : ''}
             onChange={(e) => setContext(e.target.value)}
-            placeholder="在此粘贴合同全文..."
+            placeholder={t('pastePlaceholder')}
             className="w-full mt-3 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 resize-y"
             rows={5}
           />
         )}
 
-        {/* 上传模式 */}
         {mode === 'upload' && (
           <div className="mt-3">
             <input
@@ -174,25 +168,23 @@ export default function Chat() {
               className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-primary-400 hover:text-primary-600 transition-colors text-sm"
             >
               <Upload className="w-4 h-4" />
-              选择 .txt 合同文件
+              {t('selectTxtFile')}
             </button>
             <p className="text-xs text-gray-400 mt-1">
-              仅支持 txt。PDF/Word/图片请先在「合同分析」页处理。
+              {t('txtOnlyTip')}
             </p>
           </div>
         )}
       </div>
 
-      {/* 对话区 */}
       <div className="card flex flex-col" style={{ minHeight: '400px' }}>
-        {/* 对话头部 */}
         <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <Bot className="w-5 h-5 text-primary-600" />
-            <span className="font-semibold text-gray-900">法律顾问对话</span>
+            <span className="font-semibold text-gray-900">{t('chatTitleBar')}</span>
             {hasContext && (
               <span className="text-xs bg-primary-50 text-primary-600 px-2 py-0.5 rounded-full">
-                基于合同回答
+                {t('basedOnContract')}
               </span>
             )}
           </div>
@@ -203,17 +195,16 @@ export default function Chat() {
               className="flex items-center gap-1 text-sm text-gray-400 hover:text-red-500 transition-colors"
             >
               <Trash2 className="w-4 h-4" />
-              清空对话
+              {t('clearChat')}
             </button>
           )}
         </div>
 
-        {/* 消息列表 */}
         <div className="flex-1 overflow-y-auto space-y-4 pr-1" style={{ maxHeight: '500px' }}>
           {messages.length === 0 && !loading && (
             <div className="text-center py-10">
               <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-400 mb-4">向法律顾问提问，开始对话吧</p>
+              <p className="text-gray-400 mb-4">{t('startChat')}</p>
               <div className="flex flex-col items-center gap-2">
                 {EXAMPLE_QUESTIONS.map((q) => (
                   <button
@@ -247,14 +238,13 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* 输入区 */}
         <div className="mt-3 pt-3 border-t border-gray-100">
           <div className="flex items-end gap-2">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="输入你的法律问题...（Enter 发送，Shift+Enter 换行）"
+              placeholder={t('chatPlaceholder')}
               rows={1}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 resize-none"
               style={{ minHeight: '42px', maxHeight: '120px' }}
@@ -266,7 +256,7 @@ export default function Chat() {
               className="btn-primary flex items-center gap-1.5 shrink-0"
             >
               <Send className="w-4 h-4" />
-              发送
+              {t('send')}
             </button>
           </div>
         </div>
