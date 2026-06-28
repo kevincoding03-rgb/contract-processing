@@ -8,7 +8,7 @@ import httpx
 
 from services.file_parser import parse_file
 from services.ai_service import analyze_contract, analyze_image, analyze_text_and_images, chat
-from services.supabase_client import save_analysis_record, get_analysis_history, get_analysis_by_id
+from services.supabase_client import save_analysis_record, get_analysis_history, get_analysis_by_id, delete_all_records, supabase
 
 app = FastAPI(title="法律文书智能处理平台 API", version="1.0.0")
 
@@ -134,9 +134,11 @@ async def history(user_id: str, limit: int = 20):
     try:
         records = get_analysis_history(user_id, limit)
         return {"records": records}
-    except RuntimeError:
+    except (RuntimeError, ValueError) as e:
         return {"records": [], "message": "Supabase 未配置，历史记录功能不可用"}
     except Exception as e:
+        if "Supabase" in str(e) or supabase is None:
+            return {"records": [], "message": "Supabase 未配置，历史记录功能不可用"}
         raise HTTPException(status_code=500, detail=f"查询历史记录失败: {str(e)}")
 
 
@@ -144,13 +146,29 @@ async def history(user_id: str, limit: int = 20):
 async def get_record(record_id: str):
     try:
         record = get_analysis_by_id(record_id)
-    except RuntimeError:
+    except (RuntimeError, ValueError):
         raise HTTPException(status_code=503, detail="Supabase 未配置，记录查询功能不可用")
     except Exception as e:
+        if "Supabase" in str(e):
+            raise HTTPException(status_code=503, detail="Supabase 未配置，记录查询功能不可用")
         raise HTTPException(status_code=500, detail=f"查询记录失败: {str(e)}")
     if not record:
         raise HTTPException(status_code=404, detail="记录不存在")
     return record
+
+
+@app.delete("/api/clear-history")
+async def clear_history():
+    """关闭后端前清空所有历史记录。"""
+    try:
+        count = delete_all_records()
+        return {"cleared": count}
+    except (RuntimeError, ValueError):
+        return {"cleared": 0, "message": "Supabase 未配置，无需清理"}
+    except Exception as e:
+        if "Supabase" in str(e):
+            return {"cleared": 0, "message": "Supabase 未配置，无需清理"}
+        raise HTTPException(status_code=500, detail=f"清理失败: {str(e)}")
 
 
 handler = Mangum(app)

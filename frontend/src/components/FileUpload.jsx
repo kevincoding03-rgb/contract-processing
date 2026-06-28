@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { Upload, FileText, Image, X } from 'lucide-react'
+import { useLanguage } from '../i18n'
 
 const ACCEPTED_TYPES = ['.txt', '.pdf', '.docx', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
 const IMAGE_TYPES = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
@@ -10,6 +11,7 @@ export default function FileUpload({ onFileSelect, disabled }) {
   const [file, setFile] = useState(null)
   const [dragOver, setDragOver] = useState(false)
   const [preview, setPreview] = useState(null)
+  const { t } = useLanguage()
 
   const isImage = (name) => {
     const ext = '.' + name.split('.').pop().toLowerCase()
@@ -20,16 +22,15 @@ export default function FileUpload({ onFileSelect, disabled }) {
     if (!f) return
     const ext = '.' + f.name.split('.').pop().toLowerCase()
     if (!ACCEPTED_TYPES.includes(ext)) {
-      alert('仅支持 txt、pdf、docx、jpg、png、gif、bmp、webp 格式文件')
+      alert(t('formatError'))
       return
     }
     if (f.size > 10 * 1024 * 1024) {
-      alert('文件大小不能超过 10MB')
+      alert(t('sizeError'))
       return
     }
     setFile(f)
     onFileSelect(f)
-    // 图片预览
     if (isImage(f.name)) {
       const reader = new FileReader()
       reader.onload = (e) => setPreview(e.target.result)
@@ -54,7 +55,7 @@ export default function FileUpload({ onFileSelect, disabled }) {
 
   return (
     <div className="card">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">上传合同文件</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('uploadTitle')}</h2>
 
       {!file ? (
         <div
@@ -69,8 +70,8 @@ export default function FileUpload({ onFileSelect, disabled }) {
           onDrop={handleDrop}
         >
           <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-600 mb-1">拖拽文件到此处，或点击选择文件</p>
-          <p className="text-sm text-gray-400">支持 txt、pdf、docx、jpg、png、gif、bmp、webp 格式，最大 10MB</p>
+          <p className="text-gray-600 mb-1">{t('dragOrClick')}</p>
+          <p className="text-sm text-gray-400">{t('supportedFormats')}</p>
           <input
             ref={inputRef}
             type="file"
@@ -105,7 +106,7 @@ export default function FileUpload({ onFileSelect, disabled }) {
           </div>
           {preview && (
             <div className="mt-2 rounded-lg overflow-hidden border border-gray-200">
-              <img src={preview} alt="预览" className="max-h-64 mx-auto object-contain" />
+              <img src={preview} alt="preview" className="max-h-64 mx-auto object-contain" />
             </div>
           )}
         </div>

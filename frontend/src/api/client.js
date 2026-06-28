@@ -50,6 +50,10 @@ export async function getRecord(recordId) {
   return request(`/api/record/${recordId}`)
 }
 
+export async function clearHistory() {
+  return request('/api/clear-history', { method: 'DELETE' })
+}
+
 export async function healthCheck() {
   return request('/api/health')
 }

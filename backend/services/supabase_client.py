@@ -6,15 +6,11 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
-# 占位符值（来自 .env.example），不算作已配置
-_PLACEHOLDER_URL = "https://your-project.supabase.co"
-_PLACEHOLDER_KEY = "your-supabase-anon-key"
-
 supabase = None
 
-# 校验：URL 非空且非占位符；KEY 非空且非占位符
-_key_ok = bool(SUPABASE_KEY) and SUPABASE_KEY != _PLACEHOLDER_KEY
-_url_ok = bool(SUPABASE_URL) and SUPABASE_URL != _PLACEHOLDER_URL
+# 校验：URL 非空；KEY 非空
+_key_ok = bool(SUPABASE_KEY)
+_url_ok = bool(SUPABASE_URL)
 
 if _url_ok and _key_ok:
     try:
@@ -68,3 +64,16 @@ def get_analysis_by_id(record_id: str) -> dict | None:
     if response.data:
         return response.data[0]
     return None
+
+
+def delete_all_records() -> int:
+    """删除所有历史记录，返回删除数量。"""
+    db = get_supabase()
+    # 先查出所有记录的 ID
+    response = db.table("analysis_records").select("id").execute()
+    ids = [r["id"] for r in response.data]
+    if not ids:
+        return 0
+    # 批量删除
+    db.table("analysis_records").delete().in_("id", ids).execute()
+    return len(ids)
