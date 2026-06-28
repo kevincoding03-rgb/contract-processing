@@ -3,7 +3,7 @@
 # 法律文书智能处理平台
 # Legal Document Intelligent Processing Platform
 
-**AI-powered contract risk analysis · Smart Q&A chat · OCR for images & scanned PDFs · Local LLM (Ollama)**
+**AI-powered contract risk analysis · Smart Q&A chat · OCR for images & scanned PDFs · Local LLM (Ollama) · i18n (中/En)**
 
 [中文](#中文) · [English](#english)
 
@@ -25,6 +25,8 @@
 - 💬 **智能法律问答**：独立问答页面，支持通用法律问答 + 基于合同的多轮追问（三模式切换：通用问答 / 粘贴合同 / 上传合同）
 - 💾 **历史记录**：基于 Supabase 存储分析记录，可随时回看（可选）
 - 🧹 **启动自动清理**：每次启动自动清空云端历史记录，保障隐私
+- 🌐 **国际化支持**：中英文一键切换，界面语言自动适配
+- 📡 **局域网访问**：支持局域网内其他设备访问前端和后端服务
 - 🏠 **全本地部署**：使用 Ollama 本地模型，数据不离开你的电脑
 
 ### 🧠 工作原理 / 架构
@@ -88,14 +90,18 @@
 │   ├── src/
 │   │   ├── pages/                  # 页面（Home / Chat / History）
 │   │   ├── components/             # 组件（Header / FileUpload / RiskReport / HistoryList）
+│   │   ├── i18n/                   # 国际化（中文 / English）
+│   │   │   ├── index.jsx           # i18n 初始化与 Provider
+│   │   │   ├── zh.js               # 中文翻译
+│   │   │   └── en.js               # 英文翻译
 │   │   ├── api/client.js           # API 请求封装
 │   │   ├── App.jsx                 # 路由配置
 │   │   └── main.jsx                # 入口文件
-│   ├── vite.config.js             # Vite 配置（端口 3000，API 代理）
+│   ├── vite.config.js             # Vite 配置（端口 3000，API 代理，局域网访问）
 │   ├── package.json
 │   └── .env.example
 ├── supabase_init.sql               # 数据库初始化 SQL
-└── start.bat                       # Windows 一键启动脚本
+└── start.bat                       # Windows 一键启动脚本（含局域网访问提示）
 ```
 
 ### 🚀 快速开始
@@ -124,9 +130,11 @@ ollama pull minicpm-v4.6:latest
 start.bat
 ```
 
-脚本会自动：检查环境 → 安装依赖 → 启动后端（端口 8000）→ 自动清空云端历史 → 启动前端（端口 3000）→ 打开浏览器。
+脚本会自动：检查环境 → 安装依赖 → 启动后端（端口 8000，监听 0.0.0.0）→ 自动清空云端历史 → 启动前端（端口 3000，支持局域网访问）→ 打开浏览器。
 
 > 💡 启动时会自动调用清理接口清空 Supabase 中的历史记录，保障隐私安全。
+>
+> 📡 局域网访问：其他设备可通过 `http://<你的IP>:3000` 访问前端，`http://<你的IP>:8000` 访问后端 API。请确保 Windows 防火墙允许 3000 和 8000 端口。
 
 #### 3. 手动启动
 
@@ -215,6 +223,8 @@ An AI-powered legal contract risk analysis platform built on local LLMs (Ollama)
 - 💬 **Smart Q&A**: Dedicated chat page supporting general legal Q&A + multi-turn contract follow-ups (three modes: general / paste contract / upload contract)
 - 💾 **History**: Supabase-backed record storage (optional)
 - 🧹 **Auto cleanup on startup**: Automatically clears cloud history on each launch for privacy
+- 🌐 **Internationalization (i18n)**: One-click Chinese/English switching with automatic language detection
+- 📡 **LAN access**: Supports access from other devices on the same local network
 - 🏠 **Fully local**: Uses Ollama local models — your data never leaves your machine
 
 ### 🧠 How It Works
@@ -273,13 +283,17 @@ An AI-powered legal contract risk analysis platform built on local LLMs (Ollama)
 │   ├── src/
 │   │   ├── pages/                  # Pages (Home / Chat / History)
 │   │   ├── components/             # Components (Header / FileUpload / RiskReport / HistoryList)
+│   │   ├── i18n/                   # Internationalization (Chinese / English)
+│   │   │   ├── index.jsx           # i18n init & Provider
+│   │   │   ├── zh.js               # Chinese translations
+│   │   │   └── en.js               # English translations
 │   │   ├── api/client.js           # API client
 │   │   ├── App.jsx                 # Router config
 │   │   └── main.jsx                # Entry point
-│   ├── vite.config.js              # Vite config (port 3000, API proxy)
+│   ├── vite.config.js              # Vite config (port 3000, API proxy, LAN access)
 │   └── package.json
 ├── supabase_init.sql               # Database init SQL
-└── start.bat                       # Windows one-click launcher
+└── start.bat                       # Windows one-click launcher (with LAN access tips)
 ```
 
 ### 🚀 Quick Start
@@ -308,9 +322,11 @@ Double-click:
 start.bat
 ```
 
-The script automatically: checks environment → installs dependencies → starts backend (port 8000) → auto-clears cloud history → starts frontend (port 3000) → opens the browser.
+The script automatically: checks environment → installs dependencies → starts backend (port 8000, listening on 0.0.0.0) → auto-clears cloud history → starts frontend (port 3000, LAN access enabled) → opens the browser.
 
 > 💡 The launcher automatically clears Supabase history records on startup for privacy.
+>
+> 📡 LAN access: Other devices can access the frontend at `http://<your-ip>:3000` and the backend API at `http://<your-ip>:8000`. Make sure Windows Firewall allows ports 3000 and 8000.
 
 #### 3. Manual Launch
 
@@ -387,7 +403,7 @@ Both frontend and backend support **Vercel** deployment:
 
 <div align="center">
 
-<sub>Built with FastAPI · React · Vite · Tailwind CSS · Ollama · Supabase</sub>
+<sub>Built with FastAPI · React · Vite · Tailwind CSS · Ollama · Supabase · i18n</sub>
 
 <div align="center">
 
